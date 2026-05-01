@@ -1,0 +1,1196 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>VaultX — Secure File Transfer</title>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Syne:wght@400;500;600;700;800&family=DM+Sans:ital,wght@0,300;0,400;0,500;1,300&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #080B14;
+  --bg2: #0D1120;
+  --bg3: #131729;
+  --border: rgba(255,255,255,0.07);
+  --border2: rgba(255,255,255,0.12);
+  --accent: #4F8EF7;
+  --accent2: #7B5CF5;
+  --green: #22C97A;
+  --red: #F75A5A;
+  --text: #F0F2FF;
+  --text2: #8892AA;
+  --text3: #4A5268;
+  --glow: rgba(79,142,247,0.15);
+  --glow2: rgba(123,92,245,0.12);
+}
+
+*, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+body {
+  font-family: 'DM Sans', sans-serif;
+  background: var(--bg);
+  color: var(--text);
+  min-height: 100vh;
+  overflow-x: hidden;
+}
+
+/* ─── NOISE TEXTURE OVERLAY ─── */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='noise'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23noise)' opacity='0.04'/%3E%3C/svg%3E");
+  pointer-events: none;
+  z-index: 0;
+  opacity: 0.4;
+}
+
+/* ─── AMBIENT ORBS ─── */
+.orb {
+  position: fixed;
+  border-radius: 50%;
+  filter: blur(80px);
+  pointer-events: none;
+  z-index: 0;
+  animation: orbFloat 8s ease-in-out infinite;
+}
+.orb1 { width: 400px; height: 400px; background: radial-gradient(circle, rgba(79,142,247,0.18) 0%, transparent 70%); top: -100px; right: -100px; animation-delay: 0s; }
+.orb2 { width: 350px; height: 350px; background: radial-gradient(circle, rgba(123,92,245,0.14) 0%, transparent 70%); bottom: -80px; left: -80px; animation-delay: -4s; }
+.orb3 { width: 200px; height: 200px; background: radial-gradient(circle, rgba(34,201,122,0.1) 0%, transparent 70%); top: 50%; left: 50%; animation-delay: -2s; }
+
+@keyframes orbFloat {
+  0%, 100% { transform: translate(0, 0) scale(1); }
+  33% { transform: translate(20px, -20px) scale(1.05); }
+  66% { transform: translate(-15px, 15px) scale(0.95); }
+}
+
+/* ─── LOGIN VIEW ─── */
+#view-login {
+  position: relative;
+  z-index: 1;
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 2rem;
+}
+
+.login-wrap {
+  width: 100%;
+  max-width: 420px;
+  animation: fadeUp 0.6s cubic-bezier(0.16,1,0.3,1) both;
+}
+
+@keyframes fadeUp {
+  from { opacity: 0; transform: translateY(30px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+.login-brand {
+  text-align: center;
+  margin-bottom: 2.5rem;
+}
+
+.brand-logo {
+  display: inline-flex;
+  align-items: center;
+  gap: 10px;
+  margin-bottom: 1.25rem;
+}
+
+.brand-icon {
+  width: 44px;
+  height: 44px;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 0 30px rgba(79,142,247,0.4);
+  animation: iconPulse 3s ease-in-out infinite;
+}
+
+@keyframes iconPulse {
+  0%, 100% { box-shadow: 0 0 30px rgba(79,142,247,0.4); }
+  50% { box-shadow: 0 0 50px rgba(79,142,247,0.6), 0 0 80px rgba(123,92,245,0.2); }
+}
+
+.brand-icon svg { width: 22px; height: 22px; stroke: #fff; fill: none; stroke-width: 2; }
+.brand-name { font-family: 'Syne', sans-serif; font-size: 26px; font-weight: 800; letter-spacing: -0.5px; }
+.brand-name span { background: linear-gradient(135deg, var(--accent), var(--accent2)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+
+.brand-tagline { font-size: 13px; color: var(--text2); letter-spacing: 0.02em; }
+
+.login-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 20px;
+  padding: 2rem;
+  backdrop-filter: blur(20px);
+  position: relative;
+  overflow: hidden;
+}
+
+.login-card::before {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, rgba(79,142,247,0.5), transparent);
+}
+
+.card-header {
+  margin-bottom: 1.75rem;
+}
+
+.card-title {
+  font-family: 'Syne', sans-serif;
+  font-size: 20px;
+  font-weight: 700;
+  margin-bottom: 4px;
+}
+
+.card-sub { font-size: 13px; color: var(--text2); }
+
+.field { margin-bottom: 1rem; }
+
+.field label {
+  display: block;
+  font-size: 12px;
+  font-weight: 500;
+  color: var(--text2);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 8px;
+}
+
+.input-wrap { position: relative; }
+
+.input-wrap input {
+  width: 100%;
+  padding: 12px 16px;
+  font-size: 14px;
+  font-family: 'DM Sans', sans-serif;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  color: var(--text);
+  outline: none;
+  transition: all 0.2s;
+}
+
+.input-wrap input:focus {
+  border-color: var(--accent);
+  background: var(--bg);
+  box-shadow: 0 0 0 3px rgba(79,142,247,0.1);
+}
+
+.input-wrap input::placeholder { color: var(--text3); }
+
+.auth-msg {
+  font-size: 13px;
+  text-align: center;
+  min-height: 20px;
+  margin-bottom: 0.75rem;
+  padding: 0 4px;
+  transition: all 0.3s;
+}
+
+.submit-btn {
+  width: 100%;
+  padding: 13px;
+  font-family: 'Syne', sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  letter-spacing: 0.02em;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  position: relative;
+  overflow: hidden;
+  transition: all 0.2s;
+}
+
+.submit-btn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255,255,255,0.15), transparent);
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.submit-btn:hover { transform: translateY(-1px); box-shadow: 0 8px 30px rgba(79,142,247,0.35); }
+.submit-btn:hover::before { opacity: 1; }
+.submit-btn:active { transform: translateY(0); }
+
+.toggle-row {
+  text-align: center;
+  margin-top: 1.25rem;
+  font-size: 13px;
+  color: var(--text2);
+}
+
+.toggle-row a {
+  color: var(--accent);
+  cursor: pointer;
+  font-weight: 500;
+  text-decoration: none;
+  transition: color 0.2s;
+}
+.toggle-row a:hover { color: #fff; }
+
+.security-pills {
+  display: flex;
+  gap: 6px;
+  justify-content: center;
+  flex-wrap: wrap;
+  margin-top: 1.5rem;
+}
+
+.pill {
+  font-size: 10px;
+  font-weight: 500;
+  padding: 4px 10px;
+  border-radius: 20px;
+  border: 1px solid var(--border);
+  color: var(--text3);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  background: var(--bg3);
+}
+
+/* ─── DASHBOARD ─── */
+#view-dashboard {
+  position: relative;
+  z-index: 1;
+  min-height: 100vh;
+  display: none;
+}
+
+/* TOPBAR */
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 1rem 2rem;
+  border-bottom: 1px solid var(--border);
+  background: rgba(8,11,20,0.8);
+  backdrop-filter: blur(20px);
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.top-brand {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.top-icon {
+  width: 32px;
+  height: 32px;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.top-icon svg { width: 16px; height: 16px; stroke: #fff; fill: none; stroke-width: 2.5; }
+.top-name { font-family: 'Syne', sans-serif; font-size: 16px; font-weight: 700; }
+
+.top-right { display: flex; align-items: center; gap: 12px; }
+
+.status-dot {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--green);
+  font-weight: 500;
+}
+
+.status-dot::before {
+  content: '';
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--green);
+  box-shadow: 0 0 8px var(--green);
+  animation: blink 2s ease-in-out infinite;
+}
+
+@keyframes blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+
+.user-chip {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 6px 6px 6px 12px;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 100px;
+  font-size: 13px;
+  color: var(--text2);
+}
+
+.avatar {
+  width: 26px;
+  height: 26px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 700;
+  color: #fff;
+  font-family: 'Syne', sans-serif;
+}
+
+.logout-btn {
+  padding: 5px 12px;
+  font-size: 12px;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 100px;
+  color: var(--text2);
+  cursor: pointer;
+  font-family: 'DM Sans', sans-serif;
+  transition: all 0.2s;
+}
+.logout-btn:hover { border-color: var(--border2); color: var(--text); }
+
+/* MAIN CONTENT */
+.dash-content {
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: 2rem;
+}
+
+/* STATS ROW */
+.stats-row {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+  margin-bottom: 1.5rem;
+  animation: fadeUp 0.5s cubic-bezier(0.16,1,0.3,1) both;
+}
+
+.stat-card {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 1.25rem 1.5rem;
+  position: relative;
+  overflow: hidden;
+  transition: border-color 0.2s, transform 0.2s;
+}
+
+.stat-card:hover { border-color: var(--border2); transform: translateY(-2px); }
+
+.stat-card::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--border2), transparent);
+}
+
+.stat-label { font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: 0.08em; font-weight: 500; margin-bottom: 8px; }
+.stat-val { font-family: 'Syne', sans-serif; font-size: 28px; font-weight: 800; }
+.stat-val.green { color: var(--green); }
+.stat-val.blue { background: linear-gradient(135deg, var(--accent), var(--accent2)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; }
+.stat-sub { font-size: 11px; color: var(--text3); margin-top: 4px; }
+
+/* MAIN GRID */
+.main-grid {
+  display: grid;
+  grid-template-columns: 1fr 1fr;
+  gap: 1rem;
+  margin-bottom: 1rem;
+  animation: fadeUp 0.6s cubic-bezier(0.16,1,0.3,1) 0.1s both;
+}
+
+.panel {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 1.5rem;
+  position: relative;
+  overflow: hidden;
+}
+
+.panel::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--border2), transparent);
+}
+
+.panel-title {
+  font-family: 'Syne', sans-serif;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text2);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  margin-bottom: 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.panel-title-dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+}
+
+/* UPLOAD ZONE */
+.upload-zone {
+  border: 1.5px dashed var(--border2);
+  border-radius: 12px;
+  padding: 2rem 1rem;
+  text-align: center;
+  cursor: pointer;
+  transition: all 0.3s;
+  position: relative;
+  overflow: hidden;
+  background: var(--bg3);
+}
+
+.upload-zone:hover {
+  border-color: var(--accent);
+  background: rgba(79,142,247,0.05);
+}
+
+.upload-zone.dragover {
+  border-color: var(--accent);
+  background: rgba(79,142,247,0.1);
+  transform: scale(1.01);
+}
+
+.upload-icon-wrap {
+  width: 48px;
+  height: 48px;
+  margin: 0 auto 1rem;
+  background: linear-gradient(135deg, rgba(79,142,247,0.2), rgba(123,92,245,0.2));
+  border-radius: 12px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid rgba(79,142,247,0.3);
+  transition: all 0.3s;
+}
+
+.upload-zone:hover .upload-icon-wrap {
+  background: linear-gradient(135deg, rgba(79,142,247,0.3), rgba(123,92,245,0.3));
+  transform: translateY(-3px);
+  box-shadow: 0 8px 20px rgba(79,142,247,0.2);
+}
+
+.upload-icon-wrap svg { width: 22px; height: 22px; stroke: var(--accent); fill: none; stroke-width: 2; }
+.upload-label { font-size: 14px; font-weight: 500; margin-bottom: 4px; }
+.upload-sub { font-size: 12px; color: var(--text3); }
+.upload-sub span { color: var(--accent); }
+
+.file-selected-info {
+  margin-top: 1rem;
+  padding: 10px 14px;
+  background: rgba(79,142,247,0.1);
+  border: 1px solid rgba(79,142,247,0.2);
+  border-radius: 8px;
+  font-size: 12px;
+  color: var(--accent);
+  display: none;
+  align-items: center;
+  gap: 8px;
+}
+
+.encrypt-btn {
+  width: 100%;
+  margin-top: 1rem;
+  padding: 13px;
+  font-family: 'Syne', sans-serif;
+  font-size: 14px;
+  font-weight: 600;
+  background: linear-gradient(135deg, var(--accent), var(--accent2));
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  cursor: pointer;
+  transition: all 0.25s;
+  position: relative;
+  overflow: hidden;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 8px;
+}
+
+.encrypt-btn::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: linear-gradient(135deg, rgba(255,255,255,0.15), transparent);
+  opacity: 0;
+  transition: opacity 0.2s;
+}
+
+.encrypt-btn:hover { transform: translateY(-2px); box-shadow: 0 10px 35px rgba(79,142,247,0.4); }
+.encrypt-btn:hover::before { opacity: 1; }
+.encrypt-btn:active { transform: translateY(0); }
+.encrypt-btn svg { width: 16px; height: 16px; stroke: #fff; fill: none; stroke-width: 2.5; }
+
+.upload-progress {
+  margin-top: 0.75rem;
+  font-size: 12px;
+  min-height: 16px;
+  text-align: center;
+  color: var(--text2);
+  transition: all 0.3s;
+}
+
+/* PROGRESS BAR */
+.progress-bar-wrap {
+  height: 3px;
+  background: var(--bg3);
+  border-radius: 10px;
+  margin-top: 8px;
+  overflow: hidden;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.progress-bar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, var(--accent), var(--accent2));
+  border-radius: 10px;
+  width: 0%;
+  transition: width 0.4s ease;
+}
+
+/* AUDIT LOG */
+.audit-list { display: flex; flex-direction: column; gap: 6px; max-height: 220px; overflow-y: auto; }
+.audit-list::-webkit-scrollbar { width: 3px; }
+.audit-list::-webkit-scrollbar-track { background: transparent; }
+.audit-list::-webkit-scrollbar-thumb { background: var(--border2); border-radius: 10px; }
+
+.audit-item {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  border-radius: 8px;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  font-size: 12px;
+  animation: slideIn 0.3s cubic-bezier(0.16,1,0.3,1) both;
+}
+
+@keyframes slideIn {
+  from { opacity: 0; transform: translateX(-10px); }
+  to { opacity: 1; transform: translateX(0); }
+}
+
+.audit-badge {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 2px 8px;
+  border-radius: 4px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  font-family: 'Syne', sans-serif;
+  white-space: nowrap;
+}
+
+.badge-login { background: rgba(123,92,245,0.15); color: #9B7FF7; }
+.badge-upload { background: rgba(34,201,122,0.15); color: var(--green); }
+.badge-download { background: rgba(79,142,247,0.15); color: var(--accent); }
+
+.audit-file { flex: 1; color: var(--text2); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.audit-time { color: var(--text3); font-size: 10px; white-space: nowrap; }
+
+/* FILES TABLE */
+.files-panel {
+  background: var(--bg2);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 1.5rem;
+  animation: fadeUp 0.7s cubic-bezier(0.16,1,0.3,1) 0.2s both;
+  position: relative;
+  overflow: hidden;
+}
+
+.files-panel::after {
+  content: '';
+  position: absolute;
+  top: 0; left: 0; right: 0;
+  height: 1px;
+  background: linear-gradient(90deg, transparent, var(--border2), transparent);
+}
+
+.files-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.25rem;
+}
+
+.files-count {
+  font-size: 12px;
+  color: var(--text3);
+  padding: 3px 10px;
+  background: var(--bg3);
+  border-radius: 100px;
+  border: 1px solid var(--border);
+}
+
+.file-list { display: flex; flex-direction: column; gap: 8px; }
+
+.file-item {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 12px 16px;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  transition: all 0.2s;
+  animation: fadeUp 0.4s cubic-bezier(0.16,1,0.3,1) both;
+}
+
+.file-item:hover {
+  border-color: var(--border2);
+  background: rgba(255,255,255,0.03);
+  transform: translateX(3px);
+}
+
+.file-type-icon {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  flex-shrink: 0;
+}
+
+.file-info { flex: 1; min-width: 0; }
+.file-name { font-size: 13px; font-weight: 500; color: var(--text); white-space: nowrap; overflow: hidden; text-overflow: ellipsis; margin-bottom: 2px; }
+.file-meta { font-size: 11px; color: var(--text3); }
+
+.enc-tag {
+  font-size: 10px;
+  font-weight: 600;
+  padding: 3px 8px;
+  border-radius: 5px;
+  background: rgba(34,201,122,0.1);
+  color: var(--green);
+  border: 1px solid rgba(34,201,122,0.2);
+  font-family: 'Syne', sans-serif;
+  letter-spacing: 0.04em;
+  white-space: nowrap;
+}
+
+.dl-btn {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 7px 14px;
+  font-size: 12px;
+  font-weight: 500;
+  font-family: 'DM Sans', sans-serif;
+  background: transparent;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text2);
+  cursor: pointer;
+  transition: all 0.2s;
+  white-space: nowrap;
+}
+
+.dl-btn:hover {
+  background: rgba(79,142,247,0.1);
+  border-color: rgba(79,142,247,0.3);
+  color: var(--accent);
+}
+
+.dl-btn svg { width: 13px; height: 13px; stroke: currentColor; fill: none; stroke-width: 2; }
+
+.empty-state {
+  text-align: center;
+  padding: 3rem 1rem;
+  color: var(--text3);
+}
+
+.empty-icon {
+  width: 56px;
+  height: 56px;
+  margin: 0 auto 1rem;
+  background: var(--bg3);
+  border: 1px solid var(--border);
+  border-radius: 14px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.empty-icon svg { width: 24px; height: 24px; stroke: var(--text3); fill: none; stroke-width: 1.5; }
+.empty-text { font-size: 14px; color: var(--text2); margin-bottom: 4px; font-weight: 500; }
+.empty-sub { font-size: 12px; color: var(--text3); }
+
+/* ─── TOAST ─── */
+.toast-wrap {
+  position: fixed;
+  bottom: 1.5rem;
+  right: 1.5rem;
+  z-index: 1000;
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+}
+
+.toast {
+  padding: 12px 16px;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  min-width: 260px;
+  max-width: 340px;
+  animation: toastIn 0.4s cubic-bezier(0.16,1,0.3,1) both;
+  border: 1px solid;
+  backdrop-filter: blur(20px);
+}
+
+@keyframes toastIn {
+  from { opacity: 0; transform: translateX(30px) scale(0.95); }
+  to { opacity: 1; transform: translateX(0) scale(1); }
+}
+
+@keyframes toastOut {
+  to { opacity: 0; transform: translateX(30px) scale(0.9); }
+}
+
+.toast.success { background: rgba(34,201,122,0.12); border-color: rgba(34,201,122,0.25); color: #4AE88E; }
+.toast.error { background: rgba(247,90,90,0.12); border-color: rgba(247,90,90,0.25); color: #FF8080; }
+.toast.info { background: rgba(79,142,247,0.12); border-color: rgba(79,142,247,0.25); color: #7BB0FF; }
+.toast-icon { font-size: 16px; flex-shrink: 0; }
+</style>
+</head>
+<body>
+
+<div class="orb orb1"></div>
+<div class="orb orb2"></div>
+<div class="orb orb3"></div>
+<div class="toast-wrap" id="toast-wrap"></div>
+
+<!-- ═══════════════ LOGIN VIEW ═══════════════ -->
+<div id="view-login">
+<div class="login-wrap">
+  <div class="login-brand">
+    <div class="brand-logo">
+      <div class="brand-icon">
+        <svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+      </div>
+      <div class="brand-name">Vault<span>X</span></div>
+    </div>
+    <div class="brand-tagline">Military-grade encryption for everyone</div>
+  </div>
+
+  <div class="login-card">
+    <div class="card-header">
+      <div class="card-title" id="form-title">Welcome back</div>
+      <div class="card-sub" id="form-sub">Sign in to access your encrypted vault</div>
+    </div>
+
+    <div class="field">
+      <label>Username</label>
+      <div class="input-wrap">
+        <input id="un" type="text" placeholder="Enter your username" autocomplete="username"/>
+      </div>
+    </div>
+
+    <div class="field">
+      <label>Password</label>
+      <div class="input-wrap">
+        <input id="pw" type="password" placeholder="Enter your password" autocomplete="current-password"/>
+      </div>
+    </div>
+
+    <div class="field" id="confirm-field" style="display:none">
+      <label>Confirm Password</label>
+      <div class="input-wrap">
+        <input id="pw2" type="password" placeholder="Repeat your password"/>
+      </div>
+    </div>
+
+    <div class="auth-msg" id="auth-msg"></div>
+
+    <button class="submit-btn" id="submit-btn" onclick="submitForm()">Sign In</button>
+
+    <div class="toggle-row">
+      <span id="toggle-text">Don't have an account?</span>
+      <a id="toggle-btn" onclick="toggleMode()">Create account</a>
+    </div>
+
+    <div class="security-pills">
+      <span class="pill">AES-256</span>
+      <span class="pill">JWT Auth</span>
+      <span class="pill">bcrypt</span>
+      <span class="pill">TLS 1.3</span>
+      <span class="pill">Rate Limited</span>
+    </div>
+  </div>
+</div>
+</div>
+
+<!-- ═══════════════ DASHBOARD VIEW ═══════════════ -->
+<div id="view-dashboard">
+
+  <div class="topbar">
+    <div class="top-brand">
+      <div class="top-icon">
+        <svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+      </div>
+      <div class="top-name">VaultX</div>
+    </div>
+    <div class="top-right">
+      <div class="status-dot">Secure Connection</div>
+      <div class="user-chip">
+        <span id="uname-text" style="font-size:13px;color:var(--text2)">user</span>
+        <div class="avatar" id="av">U</div>
+      </div>
+      <button class="logout-btn" onclick="doLogout()">Sign out</button>
+    </div>
+  </div>
+
+  <div class="dash-content">
+
+    <div class="stats-row">
+      <div class="stat-card">
+        <div class="stat-label">Files Stored</div>
+        <div class="stat-val blue" id="stat-files">0</div>
+        <div class="stat-sub">encrypted & secured</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Encryption</div>
+        <div class="stat-val" style="font-size:18px;color:var(--green)">AES-256</div>
+        <div class="stat-sub">military grade</div>
+      </div>
+      <div class="stat-card">
+        <div class="stat-label">Server Status</div>
+        <div class="stat-val green" style="font-size:18px">Online</div>
+        <div class="stat-sub">all systems operational</div>
+      </div>
+    </div>
+
+    <div class="main-grid">
+      <!-- Upload Panel -->
+      <div class="panel">
+        <div class="panel-title"><div class="panel-title-dot"></div>Upload File</div>
+
+        <div class="upload-zone" id="upload-zone"
+          onclick="document.getElementById('fi').click()"
+          ondragover="event.preventDefault();this.classList.add('dragover')"
+          ondragleave="this.classList.remove('dragover')"
+          ondrop="handleDrop(event)">
+          <div class="upload-icon-wrap">
+            <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="17 8 12 3 7 8"/><line x1="12" y1="3" x2="12" y2="15"/></svg>
+          </div>
+          <div class="upload-label">Drop file here or click to browse</div>
+          <div class="upload-sub">Any file type · Max <span>16 MB</span></div>
+        </div>
+
+        <input type="file" id="fi" style="display:none" onchange="fileSelected(this)">
+
+        <div class="file-selected-info" id="file-selected-info">
+          <svg viewBox="0 0 24 24" style="width:14px;height:14px;stroke:currentColor;fill:none;stroke-width:2;flex-shrink:0"><path d="M14 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V8z"/><polyline points="14 2 14 8 20 8"/></svg>
+          <span id="selected-name">No file selected</span>
+        </div>
+
+        <button class="encrypt-btn" onclick="doUpload()">
+          <svg viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></svg>
+          Encrypt &amp; Upload
+        </button>
+
+        <div class="progress-bar-wrap" id="progress-wrap">
+          <div class="progress-bar-fill" id="progress-fill"></div>
+        </div>
+        <div class="upload-progress" id="upload-progress"></div>
+      </div>
+
+      <!-- Audit Log Panel -->
+      <div class="panel">
+        <div class="panel-title"><div class="panel-title-dot" style="background:var(--accent2)"></div>Audit Log</div>
+        <div class="audit-list" id="audit-list">
+          <div style="font-size:12px;color:var(--text3);text-align:center;padding:2rem">No activity yet</div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Files Panel -->
+    <div class="files-panel">
+      <div class="files-header">
+        <div class="panel-title" style="margin:0"><div class="panel-title-dot" style="background:var(--green)"></div>Your Encrypted Files</div>
+        <div class="files-count" id="files-count">0 files</div>
+      </div>
+      <div class="file-list" id="file-list">
+        <div class="empty-state">
+          <div class="empty-icon">
+            <svg viewBox="0 0 24 24"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></svg>
+          </div>
+          <div class="empty-text">No files uploaded yet</div>
+          <div class="empty-sub">Upload your first file to get started</div>
+        </div>
+      </div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+const BASE = 'https://127.0.0.1:5000';
+let token = null, selFile = null, mode = 'login';
+
+// ── File type icons ──
+function getFileIcon(name) {
+  const ext = name.split('.').pop().toLowerCase();
+  const icons = {
+    pdf: { icon: '📄', bg: 'rgba(247,90,90,0.12)', border: 'rgba(247,90,90,0.2)' },
+    jpg: { icon: '🖼️', bg: 'rgba(79,142,247,0.12)', border: 'rgba(79,142,247,0.2)' },
+    jpeg: { icon: '🖼️', bg: 'rgba(79,142,247,0.12)', border: 'rgba(79,142,247,0.2)' },
+    png: { icon: '🖼️', bg: 'rgba(79,142,247,0.12)', border: 'rgba(79,142,247,0.2)' },
+    mp3: { icon: '🎵', bg: 'rgba(123,92,245,0.12)', border: 'rgba(123,92,245,0.2)' },
+    mp4: { icon: '🎬', bg: 'rgba(34,201,122,0.12)', border: 'rgba(34,201,122,0.2)' },
+    zip: { icon: '📦', bg: 'rgba(247,186,90,0.12)', border: 'rgba(247,186,90,0.2)' },
+    txt: { icon: '📝', bg: 'rgba(255,255,255,0.06)', border: 'rgba(255,255,255,0.1)' },
+  };
+  return icons[ext] || { icon: '📁', bg: 'rgba(255,255,255,0.06)', border: 'rgba(255,255,255,0.1)' };
+}
+
+// ── Toast notifications ──
+function showToast(msg, type = 'info') {
+  const icons = { success: '✓', error: '✕', info: 'ℹ' };
+  const wrap = document.getElementById('toast-wrap');
+  const t = document.createElement('div');
+  t.className = `toast ${type}`;
+  t.innerHTML = `<span class="toast-icon">${icons[type]}</span><span>${msg}</span>`;
+  wrap.appendChild(t);
+  setTimeout(() => { t.style.animation = 'toastOut 0.3s forwards'; setTimeout(() => t.remove(), 300); }, 3500);
+}
+
+// ── Auth message ──
+function showMsg(msg, color) {
+  const el = document.getElementById('auth-msg');
+  el.textContent = msg;
+  el.style.color = color === 'red' ? 'var(--red)' : 'var(--green)';
+}
+
+// ── Toggle login/register ──
+function toggleMode() {
+  mode = mode === 'login' ? 'register' : 'login';
+  const isReg = mode === 'register';
+  document.getElementById('form-title').textContent = isReg ? 'Create your vault' : 'Welcome back';
+  document.getElementById('form-sub').textContent = isReg ? 'Set up your encrypted account' : 'Sign in to access your encrypted vault';
+  document.getElementById('confirm-field').style.display = isReg ? 'block' : 'none';
+  document.getElementById('submit-btn').textContent = isReg ? 'Create Account' : 'Sign In';
+  document.getElementById('toggle-text').textContent = isReg ? 'Already have an account?' : "Don't have an account?";
+  document.getElementById('toggle-btn').textContent = isReg ? 'Sign in' : 'Create account';
+  document.getElementById('auth-msg').textContent = '';
+  document.getElementById('un').value = '';
+  document.getElementById('pw').value = '';
+  document.getElementById('pw2').value = '';
+}
+
+function submitForm() { mode === 'login' ? doLogin() : doRegister(); }
+
+// ── Login ──
+function doLogin() {
+  const un = document.getElementById('un').value.trim();
+  const pw = document.getElementById('pw').value;
+  if (!un || !pw) { showMsg('Please fill in all fields', 'red'); return; }
+  document.getElementById('submit-btn').textContent = 'Signing in...';
+  fetch(BASE + '/login', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username: un, password: pw }) })
+  .then(r => r.json()).then(d => {
+    if (d.token) {
+      token = d.token;
+      document.getElementById('view-login').style.display = 'none';
+      document.getElementById('view-dashboard').style.display = 'block';
+      document.getElementById('uname-text').textContent = un;
+      document.getElementById('av').textContent = un.slice(0,2).toUpperCase();
+      addAudit('login', 'Session started', 'login');
+      loadFiles();
+      showToast('Welcome back, ' + un + '!', 'success');
+    } else { showMsg(d.error || 'Login failed', 'red'); document.getElementById('submit-btn').textContent = 'Sign In'; }
+  }).catch(() => { showMsg('Cannot reach server — start app.py first', 'red'); document.getElementById('submit-btn').textContent = 'Sign In'; });
+}
+
+// ── Register ──
+function doRegister() {
+  const un = document.getElementById('un').value.trim();
+  const pw = document.getElementById('pw').value;
+  const pw2 = document.getElementById('pw2').value;
+  if (!un || !pw || !pw2) { showMsg('Please fill in all fields', 'red'); return; }
+  if (un.length < 3) { showMsg('Username must be at least 3 characters', 'red'); return; }
+  if (pw.length < 8) { showMsg('Password must be at least 8 characters', 'red'); return; }
+  if (pw !== pw2) { showMsg('Passwords do not match', 'red'); return; }
+  document.getElementById('submit-btn').textContent = 'Creating account...';
+  fetch(BASE + '/register', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ username: un, password: pw }) })
+  .then(r => r.json()).then(d => {
+    if (d.message) { showMsg('Account created! Sign in now.', 'green'); setTimeout(toggleMode, 1500); }
+    else { showMsg(d.error || 'Registration failed', 'red'); }
+    document.getElementById('submit-btn').textContent = 'Create Account';
+  }).catch(() => { showMsg('Cannot reach server', 'red'); document.getElementById('submit-btn').textContent = 'Create Account'; });
+}
+
+// ── Logout ──
+function doLogout() {
+  token = null; selFile = null; mode = 'login';
+  document.getElementById('view-login').style.display = 'flex';
+  document.getElementById('view-dashboard').style.display = 'none';
+  document.getElementById('form-title').textContent = 'Welcome back';
+  document.getElementById('form-sub').textContent = 'Sign in to access your encrypted vault';
+  document.getElementById('submit-btn').textContent = 'Sign In';
+  document.getElementById('toggle-text').textContent = "Don't have an account?";
+  document.getElementById('toggle-btn').textContent = 'Create account';
+  document.getElementById('confirm-field').style.display = 'none';
+  document.getElementById('auth-msg').textContent = '';
+  document.getElementById('un').value = '';
+  document.getElementById('pw').value = '';
+  document.getElementById('audit-list').innerHTML = '<div style="font-size:12px;color:var(--text3);text-align:center;padding:2rem">No activity yet</div>';
+}
+
+// ── Drag & drop ──
+function handleDrop(e) {
+  e.preventDefault();
+  document.getElementById('upload-zone').classList.remove('dragover');
+  const file = e.dataTransfer.files[0];
+  if (file) { selFile = file; showFileInfo(file); }
+}
+
+function fileSelected(input) {
+  if (input.files[0]) { selFile = input.files[0]; showFileInfo(selFile); }
+}
+
+function showFileInfo(file) {
+  const info = document.getElementById('file-selected-info');
+  document.getElementById('selected-name').textContent = file.name + ' — ' + (file.size/1024).toFixed(1) + ' KB';
+  info.style.display = 'flex';
+}
+
+// ── Upload with progress animation ──
+function doUpload() {
+  if (!selFile) { showToast('Please select a file first', 'error'); return; }
+  const prog = document.getElementById('upload-progress');
+  const wrap = document.getElementById('progress-wrap');
+  const fill = document.getElementById('progress-fill');
+  
+  wrap.style.opacity = '1';
+  prog.style.color = 'var(--accent)';
+
+  const steps = ['🔐 Reading file...', '🔒 Encrypting with AES-256...', '📤 Uploading securely...'];
+  const widths = [30, 65, 90];
+  steps.forEach((s, i) => setTimeout(() => { prog.textContent = s; fill.style.width = widths[i] + '%'; }, i * 700));
+
+  const fd = new FormData();
+  fd.append('file', selFile);
+
+  fetch(BASE + '/upload', { method: 'POST', headers: { 'Authorization': 'Bearer ' + token }, body: fd })
+  .then(r => r.json()).then(d => {
+    if (d.file_id) {
+      fill.style.width = '100%';
+      setTimeout(() => {
+        prog.style.color = 'var(--green)';
+        prog.textContent = '✓ Encrypted and stored securely';
+        addAudit('upload', selFile.name, 'upload');
+        showToast(selFile.name + ' encrypted & uploaded!', 'success');
+        selFile = null;
+        document.getElementById('fi').value = '';
+        document.getElementById('file-selected-info').style.display = 'none';
+        loadFiles();
+        setTimeout(() => { wrap.style.opacity = '0'; prog.textContent = ''; fill.style.width = '0%'; }, 2000);
+      }, 300);
+    } else {
+      prog.style.color = 'var(--red)';
+      prog.textContent = '✕ ' + (d.error || 'Upload failed');
+      wrap.style.opacity = '0';
+      showToast(d.error || 'Upload failed', 'error');
+    }
+  });
+}
+
+// ── Load files ──
+function loadFiles() {
+  fetch(BASE + '/files', { headers: { 'Authorization': 'Bearer ' + token } })
+  .then(r => r.json()).then(data => {
+    document.getElementById('stat-files').textContent = data.length;
+    document.getElementById('files-count').textContent = data.length + ' file' + (data.length !== 1 ? 's' : '');
+    const el = document.getElementById('file-list');
+    if (!data.length) {
+      el.innerHTML = `<div class="empty-state"><div class="empty-icon"><svg viewBox="0 0 24 24"><path d="M13 2H6a2 2 0 0 0-2 2v16a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9z"/><polyline points="13 2 13 9 20 9"/></svg></div><div class="empty-text">No files uploaded yet</div><div class="empty-sub">Upload your first file to get started</div></div>`;
+      return;
+    }
+    el.innerHTML = data.map((f, i) => {
+      const fi = getFileIcon(f.filename);
+      return `<div class="file-item" style="animation-delay:${i*0.05}s">
+        <div class="file-type-icon" style="background:${fi.bg};border:1px solid ${fi.border}">${fi.icon}</div>
+        <div class="file-info">
+          <div class="file-name">${f.filename}</div>
+          <div class="file-meta">${(f.size/1024).toFixed(1)} KB &nbsp;·&nbsp; ${new Date(f.uploaded_at).toLocaleString()}</div>
+        </div>
+        <span class="enc-tag">AES-256</span>
+        <button class="dl-btn" onclick="doDownload(${f.id},'${f.filename}')">
+          <svg viewBox="0 0 24 24"><path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/><polyline points="7 10 12 15 17 10"/><line x1="12" y1="15" x2="12" y2="3"/></svg>
+          Download
+        </button>
+      </div>`;
+    }).join('');
+  });
+}
+
+// ── Download ──
+function doDownload(id, name) {
+  showToast('Decrypting ' + name + '...', 'info');
+  fetch(BASE + '/download/' + id, { headers: { 'Authorization': 'Bearer ' + token } })
+  .then(r => r.blob()).then(blob => {
+    const a = document.createElement('a');
+    a.href = URL.createObjectURL(blob);
+    a.download = name;
+    a.click();
+    addAudit('download', name, 'download');
+    showToast(name + ' downloaded!', 'success');
+  });
+}
+
+// ── Audit log ──
+function addAudit(action, file, type) {
+  const l = document.getElementById('audit-list');
+  if (l.querySelector('[style*="text-align:center"]')) l.innerHTML = '';
+  const d = document.createElement('div');
+  d.className = 'audit-item';
+  const now = new Date().toLocaleTimeString([], {hour:'2-digit',minute:'2-digit'});
+  d.innerHTML = `<span class="audit-badge badge-${type}">${action}</span><span class="audit-file">${file}</span><span class="audit-time">${now}</span>`;
+  l.insertBefore(d, l.firstChild);
+  if (l.children.length > 8) l.removeChild(l.lastChild);
+}
+
+// Enter key support
+document.addEventListener('keydown', e => { if (e.key === 'Enter' && document.getElementById('view-login').style.display !== 'none') submitForm(); });
+</script>
+</body>
+</html>
