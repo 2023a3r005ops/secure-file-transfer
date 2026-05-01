@@ -964,7 +964,10 @@ body::before {
 </div>
 
 <script>
-const BASE = 'https://127.0.0.1:5000';
+const BASE = window.location.hostname === '127.0.0.1' || 
+             window.location.hostname === 'localhost'
+             ? 'https://127.0.0.1:5000'
+             : 'https://192.168.56.1:5000';
 let token = null, selFile = null, mode = 'login';
 
 // ── File type icons ──
